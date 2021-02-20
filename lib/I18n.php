@@ -105,6 +105,7 @@ class I18n
             self::loadTranslations();
         }
         $messages = $messageId;
+
         if (is_array($messageId)) {
             $messageId = count($messageId) > 1 ? $messageId[1] : $messageId[0];
         }
@@ -129,7 +130,7 @@ class I18n
         $argsCount = count($args);
         if ($argsCount > 1) {
             for ($i = 0; $i < $argsCount; ++$i) {
-                if (($i > 0 && !is_int($args[$i])) || strpos($args[0], '<a') === false) {
+                if (($i > 0 && !is_int($args[$i]))) {
                     $args[$i] = self::encode($args[$i]);
                 }
             }
@@ -147,8 +148,32 @@ class I18n
      */
     public static function encode($string)
     {
-        return htmlspecialchars($string, ENT_QUOTES | ENT_HTML5 | ENT_DISALLOWED, 'UTF-8', false);
+        $safeEncoded = htmlspecialchars($string, ENT_QUOTES | ENT_HTML5 | ENT_DISALLOWED, 'UTF-8', false);
+        return self::reactiveAuthorizedMarkup($safeEncoded);
     }
+
+    /**
+     * reactive only some HTML markups
+     *
+     * @access private
+     * @static
+     * @param  string $string
+     * @return string
+     */
+    public static function reactiveAuthorizedMarkup($encoded)
+    {
+        $replacementRegexpMap = array(
+            '#&lt;i&gt;(.*)&lt;/i&gt;#i' => '<i>$1</i>',
+            '#&lt;a href="([^"]*)"&gt;(.*)&lt;/a&gt;#i' => '<a href"$1">$2</a>'
+        );
+        $partiallyDecoded = preg_replace(
+            array_keys($replacementRegexpMap), 
+            array_values($replacementRegexpMap),
+            $encoded
+        );
+        return $partiallyDecoded;
+    }
+    
 
     /**
      * loads translations
